@@ -1,0 +1,35 @@
+{
+  "name": "yarn-plugin-npm-cli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Backport of Yarn 4's bulk npm audit command for Yarn >=3.2.0 <4",
+  "license": "BSD-2-Clause",
+  "main": "./sources/index.ts",
+  "scripts": {
+    "build": "builder build plugin && node ./scripts/publish-bundle.mjs",
+    "check": "npm run typecheck && npm test",
+    "pretest": "npm run build",
+    "sync:upstream": "node ./scripts/sync-upstream.mjs",
+    "test": "node --test ./tests/*.test.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/micromatch": "^4.0.9",
+    "@types/node": "^18.19.0",
+    "@types/semver": "^7.7.0",
+    "@yarnpkg/builder": "3.2.0",
+    "@yarnpkg/cli": "3.2.0",
+    "@yarnpkg/cli-dist": "3.2.0",
+    "@yarnpkg/core": "3.2.0",
+    "@yarnpkg/plugin-npm": "2.7.0",
+    "clipanion": "^3.2.0-rc.4",
+    "micromatch": "^4.0.8",
+    "semver": "^7.7.2",
+    "typescript": "^5.8.3",
+    "typanion": "^3.14.0",
+    "yarn-3-latest": "npm:@yarnpkg/cli-dist@3.8.7"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

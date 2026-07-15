@@ -1,0 +1,10 @@
+{
+  "repository": "yarnpkg/berry",
+  "ref": "master",
+  "commit": "0a230c14e71247576f6b51fa811ae08edb6608aa",
+  "files": [
+    "packages/plugin-npm-cli/sources/commands/npm/audit.ts",
+    "packages/plugin-npm-cli/sources/npmAuditTypes.ts",
+    "packages/plugin-npm-cli/sources/npmAuditUtils.ts"
+  ]
+}

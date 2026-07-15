@@ -1,0 +1,60 @@
+name: Sync Yarn audit backport
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sync-yarn-audit-backport
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+          package-manager-cache: false
+      - run: npm ci
+      - name: Sync and validate
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm run sync:upstream
+          npm run check
+      - name: Open or update pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git diff --quiet; then
+            echo "Already up to date"
+            exit 0
+          fi
+
+          branch=automation/sync-yarn-audit
+          commit=$(node -p "require('./.yarn-audit-upstream.json').commit")
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -C "$branch"
+          git add sources/npmAuditTypes.ts sources/npmAuditUtils.ts sources/commands/npm/audit.ts .yarn-audit-upstream.json plugin-yarn-bulkaudit.js
+          git commit -m "chore: sync Yarn 4 audit from ${commit:0:12}"
+          git push --force-with-lease origin "$branch"
+
+          if ! gh pr view "$branch" >/dev/null 2>&1; then
+            gh pr create \
+              --base main \
+              --head "$branch" \
+              --title "chore: sync Yarn 4 audit backport" \
+              --body "Automated weekly synchronization of Yarn 4's bulk audit implementation. The compatibility transforms, typecheck, bundle build, and Yarn 3.2/3.8 integration tests all passed."
+          fi
