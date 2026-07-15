@@ -1,4 +1,4 @@
-# yarn-v3-audit
+# yarn-v3-bulk-audit
 
 A Yarn plugin that backports Yarn 4's bulk-advisory implementation of `yarn npm audit` to Yarn `>=3.2.0 <4`.
 
@@ -11,10 +11,10 @@ Internally, the bundle uses Yarn's plugin-name override mechanism to replace `@y
 Use Yarn's `plugin import` command (not `yarn run import`):
 
 ```sh
-yarn plugin import https://raw.githubusercontent.com/OWNER/yarn-v3-audit/main/plugin-yarn-bulkaudit.js
+yarn plugin import https://raw.githubusercontent.com/reecebenson/yarn-v3-bulk-audit/refs/heads/main/plugin-yarn-bulkaudit.js
 ```
 
-Replace `OWNER` with the GitHub owner after this repository is published. A local build can be imported with:
+A local build can be imported with:
 
 ```sh
 yarn plugin import ./plugin-yarn-bulkaudit.js
