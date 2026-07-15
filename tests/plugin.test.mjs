@@ -19,7 +19,11 @@ function runProgram(program, args, cwd) {
   return new Promise((resolvePromise, reject) => {
     const child = spawn(program, args, {
       cwd,
-      env: {...process.env, YARN_ENABLE_TELEMETRY: `0`},
+      env: {
+        ...process.env,
+        YARN_ENABLE_IMMUTABLE_INSTALLS: `0`,
+        YARN_ENABLE_TELEMETRY: `0`,
+      },
       stdio: [`ignore`, `pipe`, `pipe`],
     });
     let stdout = ``;
