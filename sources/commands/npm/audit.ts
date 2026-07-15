@@ -17,7 +17,7 @@ export default class NpmAuditCommand extends BaseCommand {
   ];
 
   static usage: Usage = Command.Usage({
-    description: `perform a vulnerability audit against the installed packages`,
+    description: `This command is controlled by yarn-v3-bulk-audit; it performs a vulnerability audit against the installed packages`,
     details: `
       This command checks for known security reports on the packages you use. The reports are by default extracted from the npm registry, and may or may not be relevant to your actual program (not all vulnerabilities affect all code paths).
 

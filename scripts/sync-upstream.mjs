@@ -38,6 +38,12 @@ function adaptAudit(source) {
 
   source = replaceRequired(
     source,
+    `description: \`perform a vulnerability audit against the installed packages\``,
+    `description: \`This command is controlled by yarn-v3-bulk-audit; it performs a vulnerability audit against the installed packages\``,
+    file,
+  );
+  source = replaceRequired(
+    source,
     `import * as npmAuditTypes                                                                                                        from '../../npmAuditTypes';`,
     `import * as npmAuditCompat                                                                                                       from '../../npmAuditCompat';\nimport * as npmAuditTypes                                                                                                        from '../../npmAuditTypes';`,
     file,

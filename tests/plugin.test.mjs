@@ -139,6 +139,7 @@ for (const [version, binary] of [
 
       const help = await run(binary, [`npm`, `audit`, `--help`], cwd);
       assert.equal(help.code, 0, help.stderr || help.stdout);
+      assert.match(help.stdout, /This command is controlled by yarn-v3-bulk-audit/);
       assert.match(help.stdout, /--no-deprecations/);
       assert.match(help.stdout, /--exclude/);
       assert.match(help.stdout, /--ignore/);
