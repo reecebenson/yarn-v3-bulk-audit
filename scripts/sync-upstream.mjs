@@ -81,6 +81,18 @@ function adaptUtils(source) {
 
   source = replaceRequired(
     source,
+    `    const resolution = project.storedResolutions.get(descriptor.descriptorHash);\n    if (typeof resolution === \`undefined\`)\n      throw new Error(\`Assertion failed: The resolution should have been registered\`);`,
+    `    let registeredDescriptor = descriptor;\n    let resolution = project.storedResolutions.get(registeredDescriptor.descriptorHash);\n\n    // Yarn 3 binds resolver-internal dependencies to the top-level workspace\n    // before registering them. Yarn 4 returns descriptors that are already\n    // suitable for lookup, so the upstream traversal doesn't need this step.\n    if (typeof resolution === \`undefined\`) {\n      registeredDescriptor = resolver.bindDescriptor(descriptor, project.topLevelWorkspace.anchoredLocator, resolveOptions);\n      resolution = project.storedResolutions.get(registeredDescriptor.descriptorHash);\n    }\n\n    if (typeof resolution === \`undefined\`)\n      throw new Error(\`Assertion failed: The resolution should have been registered (\${structUtils.stringifyDescriptor(descriptor)})\`);`,
+    file,
+  );
+  source = replaceRequired(
+    source,
+    `const devirtualizedDescriptor = structUtils.ensureDevirtualizedDescriptor(descriptor);`,
+    `const devirtualizedDescriptor = structUtils.isVirtualDescriptor(registeredDescriptor)\n      ? structUtils.devirtualizeDescriptor(registeredDescriptor)\n      : registeredDescriptor;`,
+    file,
+  );
+  source = replaceRequired(
+    source,
     `          ID: typeof advisory.id !== \`undefined\` && {\n            label: \`ID\`,\n            value: formatUtils.tuple(formatUtils.Type.ID, advisory.id),\n          },`,
     `          ...typeof advisory.id !== \`undefined\` ? {ID: {\n            label: \`ID\`,\n            value: formatUtils.tuple(formatUtils.Type.NO_HINT, \`\${advisory.id}\`),\n          }} : {},`,
     file,
@@ -95,12 +107,6 @@ function adaptUtils(source) {
     source,
     `workspace.anchoredPackage.dependencies.values()`,
     `workspace.dependencies.values()`,
-    file,
-  );
-  source = replaceRequired(
-    source,
-    `const devirtualizedDescriptor = structUtils.ensureDevirtualizedDescriptor(descriptor);`,
-    `const devirtualizedDescriptor = structUtils.isVirtualDescriptor(descriptor)\n      ? structUtils.devirtualizeDescriptor(descriptor)\n      : descriptor;`,
     file,
   );
   source = replaceRequired(

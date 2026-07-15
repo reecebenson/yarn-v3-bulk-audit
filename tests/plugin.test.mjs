@@ -103,7 +103,7 @@ async function makeRegistryFixture(cwd) {
           id: 42,
           title: `Test advisory`,
           url: `https://example.test/advisories/42`,
-          severity: `high`,
+          severity: `critical`,
           vulnerable_versions: `<2.0.0`,
         }],
       } : {};
@@ -164,6 +164,34 @@ test(`the command uses the bulk endpoint and filters its response`, async () => 
     fixture = await makeRegistryFixture(cwd);
     await writeFile(resolve(cwd, `package.json`), `${JSON.stringify({
       private: true,
+      workspaces: [`packages/*`],
+      dependencies: {
+        [`local-package`]: `patch:local-package@file:./local-package#./local.patch`,
+      },
+    })}\n`);
+    const localPackageCwd = resolve(cwd, `local-package`);
+    await mkdir(localPackageCwd);
+    await writeFile(resolve(localPackageCwd, `package.json`), `${JSON.stringify({
+      name: `local-package`,
+      version: `1.0.0`,
+      main: `index.js`,
+    })}\n`);
+    await writeFile(resolve(localPackageCwd, `index.js`), `module.exports = true;\n`);
+    await writeFile(resolve(cwd, `local.patch`), [
+      `diff --git a/index.js b/index.js`,
+      `--- a/index.js`,
+      `+++ b/index.js`,
+      `@@ -1 +1 @@`,
+      `-module.exports = true;`,
+      `+module.exports = false;`,
+      ``,
+    ].join(`\n`));
+    const workspaceCwd = resolve(cwd, `packages/app`);
+    await mkdir(workspaceCwd, {recursive: true});
+    await writeFile(resolve(workspaceCwd, `package.json`), `${JSON.stringify({
+      name: `app`,
+      private: true,
+      version: `1.0.0`,
       dependencies: {vulnerable: `1.0.0`},
     })}\n`);
     await writeFile(resolve(cwd, `.yarnrc.yml`), [
@@ -179,7 +207,7 @@ test(`the command uses the bulk endpoint and filters its response`, async () => 
     const installed = await run(binary, [`install`], cwd);
     assert.equal(installed.code, 0, installed.stderr || installed.stdout);
 
-    const audit = await run(binary, [`npm`, `audit`, `--no-deprecations`, `--json`], cwd);
+    const audit = await run(binary, [`npm`, `audit`, `--all`, `--severity`, `critical`, `--no-deprecations`, `--json`], cwd);
     assert.equal(audit.code, 1, audit.stderr || audit.stdout);
     assert.match(audit.stdout, /https:\/\/example\.test\/advisories\/42/);
 
@@ -187,18 +215,18 @@ test(`the command uses the bulk endpoint and filters its response`, async () => 
     assert.deepEqual(JSON.parse(bulkRequest.body), {vulnerable: [`1.0.0`]});
     assert.equal(fixture.requests.some(request => request.url === `/-/npm/v1/security/audits/quick`), false);
 
-    const ignored = await run(binary, [`npm`, `audit`, `--no-deprecations`, `--ignore`, `42`, `--json`], cwd);
+    const ignored = await run(binary, [`npm`, `audit`, `--all`, `--no-deprecations`, `--ignore`, `42`, `--json`], cwd);
     assert.equal(ignored.code, 0, ignored.stderr || ignored.stdout);
     assert.equal(ignored.stdout, ``);
 
-    const excluded = await run(binary, [`npm`, `audit`, `--no-deprecations`, `--exclude`, `vulnerable`, `--json`], cwd);
+    const excluded = await run(binary, [`npm`, `audit`, `--all`, `--no-deprecations`, `--exclude`, `vulnerable`, `--json`], cwd);
     assert.equal(excluded.code, 0, excluded.stderr || excluded.stdout);
     assert.equal(excluded.stdout, ``);
     const lastBulkRequest = fixture.requests.filter(request => request.url === `/-/npm/v1/security/advisories/bulk`).at(-1);
     assert.deepEqual(JSON.parse(lastBulkRequest.body), {});
 
     fixture.disableAdvisories();
-    const deprecated = await run(binary, [`npm`, `audit`, `--json`], cwd);
+    const deprecated = await run(binary, [`npm`, `audit`, `--all`, `--json`], cwd);
     assert.equal(deprecated.code, 1, deprecated.stderr || deprecated.stdout);
     assert.match(deprecated.stdout, /vulnerable \(deprecation\)/);
     assert.match(deprecated.stdout, /Use a maintained replacement/);

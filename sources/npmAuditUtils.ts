@@ -114,9 +114,19 @@ export function getPackages(project: Project, roots: Array<TopLevelDependency>, 
   const resolveOptions: MinimalResolveOptions = {project, resolver};
 
   const processDescriptor = (parent: Locator, descriptor: Descriptor) => {
-    const resolution = project.storedResolutions.get(descriptor.descriptorHash);
+    let registeredDescriptor = descriptor;
+    let resolution = project.storedResolutions.get(registeredDescriptor.descriptorHash);
+
+    // Yarn 3 binds resolver-internal dependencies to the top-level workspace
+    // before registering them. Yarn 4 returns descriptors that are already
+    // suitable for lookup, so the upstream traversal doesn't need this step.
+    if (typeof resolution === `undefined`) {
+      registeredDescriptor = resolver.bindDescriptor(descriptor, project.topLevelWorkspace.anchoredLocator, resolveOptions);
+      resolution = project.storedResolutions.get(registeredDescriptor.descriptorHash);
+    }
+
     if (typeof resolution === `undefined`)
-      throw new Error(`Assertion failed: The resolution should have been registered`);
+      throw new Error(`Assertion failed: The resolution should have been registered (${structUtils.stringifyDescriptor(descriptor)})`);
 
     if (!traversed.has(resolution))
       traversed.add(resolution);
@@ -127,9 +137,9 @@ export function getPackages(project: Project, roots: Array<TopLevelDependency>, 
     if (typeof pkg === `undefined`)
       throw new Error(`Assertion failed: The package should have been registered`);
 
-    const devirtualizedDescriptor = structUtils.isVirtualDescriptor(descriptor)
-      ? structUtils.devirtualizeDescriptor(descriptor)
-      : descriptor;
+    const devirtualizedDescriptor = structUtils.isVirtualDescriptor(registeredDescriptor)
+      ? structUtils.devirtualizeDescriptor(registeredDescriptor)
+      : registeredDescriptor;
     if (resolver.supportsDescriptor(devirtualizedDescriptor, resolveOptions)) {
       const resolutionDependencies = resolver.getResolutionDependencies(devirtualizedDescriptor, resolveOptions);
 
